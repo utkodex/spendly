@@ -1,0 +1,38 @@
+/rename
+
+Resume Conversation
+claude -r
+/resume
+
+Exit Conversation
+/init                         Initialize a new CLAUDE.md file with codebase documentation
+/exit
+
+/btw                          Ask a quick side question without interrupting the main conversation
+/export                       Export the current conversation to a file or clipboard
+/config                       Open config panel
+/permissions                  Manage allow & deny tool permission rules
+
+/logout                       Sign out from your Anthropic account
+/login                        Sign in with your Anthropic account
+
+/usage                        Show session cost, plan usage, and activity stats
+/extra-usage                  Configure extra usage to keep working when limits are hit
+/usage (stats)                Show session cost, plan usage, and activity stats
+/insights                     Generate a report analyzing your Claude Code sessions
+
+/plan                         Enable plan mode or view the current session plan
+/effort                       Set effort level for model usage
+/ultraplan                    a few minutes · Claude Code on the web drafts a plan you can edit and approve. See
+                              https://code.claude.com/docs/en/claude-code-on-the-web
+
+
+Cool
+/voice                        Toggle voice mode
+
+
+Manage Context Window
+/context                      Visualize current context usage as a colored grid
+/compact                      Free up context by summarizing the conversation so far to see summary click CLT+O
+/clear                        Start a new session with empty context; previous session stays on disk (resumable with /resume)
+/memory                       Edit Claude memory files
