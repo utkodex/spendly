@@ -6,6 +6,12 @@ from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from database.db import get_db, init_db, seed_db
+from database.queries import (
+    get_user_by_id,
+    get_summary_stats,
+    get_recent_transactions,
+    get_category_breakdown,
+)
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -131,40 +137,59 @@ def profile():
     if not session.get("user_id"):
         return redirect(url_for("login"))
 
-    user = {
-        "name": "Demo User",
-        "email": "demo@spendly.com",
-        "initials": "DU",
-        "member_since": "January 2026",
-    }
+    user_id = session["user_id"]
 
-    stats = {
-        "total_spent": "8,420",
-        "transaction_count": 8,
-        "top_category": "Bills",
-        "top_category_key": "bills",
-    }
+    # === SECTION A: USER + STATS (Subagent 2) ============================
+    # Fills `user` and `stats` dicts from get_user_by_id + get_summary_stats.
+    # Adds UI extras:
+    #   - user["initials"]: first letter of each whitespace-split name part,
+    #     uppercased, max 2 chars.
+    #   - stats["top_category_key"]: top_category.lower() ("other" when "—").
+    user = get_user_by_id(user_id)
+    if user is None:
+        return redirect(url_for("logout"))
+    parts = user["name"].split()
+    user["initials"] = "".join(p[0] for p in parts).upper()[:2]
 
+    stats = get_summary_stats(user_id)
+    top_category = stats["top_category"]
+    stats["top_category_key"] = "other" if top_category == "—" else top_category.lower()
+    stats["total_spent"] = "%.2f" % stats["total_spent"]
+    # === END SECTION A ==================================================
+
+    # === SECTION B: TRANSACTIONS (Subagent 1) ============================
+    # Calls get_recent_transactions(user_id, limit=10) and adapts each row:
+    #   - date: parse "YYYY-MM-DD" -> "DD Mon" (e.g. "16 May")
+    #   - key:  category.lower()
+    #   - amount: "%.2f" formatted string
+    from datetime import datetime
     transactions = [
-        {"date": "16 May", "description": "Electricity bill",       "category": "Bills",         "key": "bills",         "amount": "1,200"},
-        {"date": "14 May", "description": "Weekly groceries",       "category": "Food",          "key": "food",          "amount": "640"},
-        {"date": "12 May", "description": "Metro card top-up",      "category": "Transport",     "key": "transport",     "amount": "300"},
-        {"date": "11 May", "description": "Movie night",            "category": "Entertainment", "key": "entertainment", "amount": "450"},
-        {"date": "09 May", "description": "Pharmacy run",           "category": "Health",        "key": "health",        "amount": "220"},
-        {"date": "06 May", "description": "Cotton kurta",           "category": "Shopping",      "key": "shopping",      "amount": "1,150"},
-        {"date": "04 May", "description": "Cafe with Riya",         "category": "Food",          "key": "food",          "amount": "380"},
-        {"date": "02 May", "description": "Streaming subscription", "category": "Other",         "key": "other",         "amount": "199"},
+        {
+            "date": datetime.strptime(row["date"], "%Y-%m-%d").strftime("%d %b"),
+            "description": row["description"],
+            "category": row["category"],
+            "key": row["category"].lower(),
+            "amount": "%.2f" % row["amount"],
+        }
+        for row in get_recent_transactions(user_id, limit=10)
     ]
+    # === END SECTION B ==================================================
 
+    # === SECTION C: CATEGORIES (Subagent 3) ==============================
+    # Calls get_category_breakdown(user_id) and adapts each row:
+    #   - rename `amount` -> `total` (string, "%.2f")
+    #   - rename `pct`    -> `percent`
+    #   - add `key`: name.lower()
     categories = [
-        {"name": "Bills",         "key": "bills",         "total": "3,200", "percent": 38},
-        {"name": "Food",          "key": "food",          "total": "1,840", "percent": 22},
-        {"name": "Shopping",      "key": "shopping",      "total": "1,150", "percent": 14},
-        {"name": "Entertainment", "key": "entertainment", "total": "650",   "percent": 8},
-        {"name": "Transport",     "key": "transport",     "total": "560",   "percent": 7},
-        {"name": "Health",        "key": "health",        "total": "440",   "percent": 5},
-        {"name": "Other",         "key": "other",         "total": "380",   "percent": 4},
+        {
+            "name": row["name"],
+            "key": row["name"].lower(),
+            "total": "%.2f" % row["amount"],
+            "percent": row["pct"],
+        }
+        for row in get_category_breakdown(user_id)
     ]
+    # === END SECTION C ==================================================
 
     return render_template(
         "profile.html",
