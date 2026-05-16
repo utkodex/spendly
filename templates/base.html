@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://unpkg.com/lucide@latest" defer></script>
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -20,6 +21,10 @@
             </a>
             <div class="nav-links">
                 {% if session.get('user_id') %}
+                    <a href="{{ url_for('profile') }}" class="nav-user">
+                        <i data-lucide="user-circle-2"></i>
+                        <span>Hi, {{ session.get('user_name', 'there') }}</span>
+                    </a>
                     <a href="{{ url_for('logout') }}">Sign out</a>
                 {% else %}
                     <a href="{{ url_for('login') }}">Sign in</a>
@@ -44,6 +49,13 @@
     </footer>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                window.lucide.createIcons();
+            }
+        });
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

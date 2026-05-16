@@ -36,3 +36,4 @@ Manage Context Window
 /compact                      Free up context by summarizing the conversation so far to see summary click CLT+O
 /clear                        Start a new session with empty context; previous session stays on disk (resumable with /resume)
 /memory                       Edit Claude memory files
+/rewind                       Restore the code and/or conversation to a previous point
